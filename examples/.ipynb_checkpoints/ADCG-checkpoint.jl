@@ -1,5 +1,6 @@
 export ADCG
 using Printf
+
 function ADCG(sim :: ForwardModel, lossFn :: Loss, y :: Vector{Float64}, tau :: Float64;
   callback :: Function = (old_thetas,thetas, weights,output,old_obj_val) -> false,
   max_iters :: Int64 = 50,
@@ -23,8 +24,6 @@ function ADCG(sim :: ForwardModel, lossFn :: Loss, y :: Vector{Float64}, tau :: 
     #compute the next parameter value to add to the support
     theta,score = lmo(sim,grad)
     #println("The objective value for the current residual is: ", string(objective_value))
-    #println("The score for the current residual is: ", string(score))
-    #println("The parameter locations are: ", string(theta))
     #score is - |<\psi(theta), gradient>|
     #update the lower bound on the optimal value
     bound = max(bound, objective_value+score*tau-dot(output,grad))
@@ -39,15 +38,12 @@ function ADCG(sim :: ForwardModel, lossFn :: Loss, y :: Vector{Float64}, tau :: 
     thetas = iter == 1 ? reshape(theta, length(theta),1) : [thetas theta]
     #run local optimization over the support.
     old_weights = copy(weights)
-    #println("The updated Theta array is: ", string(thetas))
-    #println(string(thetas))
     thetas,weights = localUpdate(sim,lossFn,thetas,y,tau,max_cd_iters)
     output = phi(sim, thetas, weights)
     if callback(old_thetas, thetas,weights, output, objective_value)
       return old_thetas, old_weights
     end
   end
-#  print(thetas)
   println("Hit max iters in frank-wolfe!")
   return thetas, weights
 end
